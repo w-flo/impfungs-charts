@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="de">
+
+<!--
+Lizenz der für die Diagramme genutzten Bibliothek Chart.js:
+===========================================================
+The MIT License (MIT)
+
+Copyright (c) 2018 Chart.js Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+
+<head>
+    <meta charset="utf-8">
+    <title>Covid-19-Impfungen in den deutschen Bundesländern</title>
+</head>
+<body>
+    <h1>Covid-19-Impfungen in den deutschen Bundesländern: Impfgeschwindigkeit und Reichweite des Lagerbestands</h1>
+
+    <p>
+        Die Impfzahlen beruhen auf der Gesamtzahl der am jeweiligen Tag seit Beginn der Impfkampagne gemeldeten Impfungen.
+        Regelmäßig vorkommende Nachmeldungen werden also nicht rückwirkend dem tatsächlichen Impftag zugeordnet.
+        Die entsprechenden Nachmelde-Daten werden durch das RKI nicht auf die Bundesländer aufgeschlüsselt veröffentlicht.
+        Bei Datenfehlern kommt es daher zu Artefakten wie z.B. in NRW am 12. und 19. März – als zunächst ein größerer Teil älterer Impfungen aus den Zahlen verschwunden ist, am Folgetag jedoch wieder ergänzt wurde.
+    </p>
+
+    <p>
+        Quellen: Impfzahlen aus den <a href="https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Daten/Impfquotenmonitoring.html">täglichen Veröffentlichungen des RKI</a>, Liefermengen aus den <a href="https://impfdashboard.de/daten">Daten des Impfdashboards</a> von RKI und BMG.
+    </p>
+
+    <p>
+        Allgemeinere Statistiken zum Impffortschritt gibt es z.B. bei der <a href="https://www.zeit.de/wissen/gesundheit/corona-impfungen-deutschland-impfquote-impffortschritt-aktuelle-karte">ZEIT</a>.
+    </p>
+
+    <select id="select_vaccine" size="1">
+        <option value="">Alle Impfstoffe</option>
+        <option value="comirnaty">nur BioNTech / Pfizer</option>
+        <option value="moderna">nur Moderna</option>
+        <option value="astra">nur Oxford / AstraZeneca</option>
+    </select>
+    
+    <h2>Tägliche Zahl der Impfungen pro 100 Einwohner im Schnitt der letzten 7 Tage</h2>
+    <canvas id="chart_doses_per_day" width="400" height="130"></canvas>
+    
+    <h2>Reichweite des Lagerbestandes in Tagen, bei der Impfgeschwindigkeit der letzten 7 Tage</h2>
+    <canvas id="chart_good_for" width="400" height="130"></canvas>
+
+    <h2>Lagerbestand: Dosen pro 100 Einwohner</h2>
+    <canvas id="chart_unused" width="400" height="130"></canvas>
+
+    <script type="text/javascript" src="Chart.js/Chart.bundle.min.js"></script>
+    <script type="text/javascript" src="draw-charts.js"></script>
+</body>
+</html>
