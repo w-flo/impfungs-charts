@@ -24,9 +24,18 @@ for (state of states) {
 var vaccination_data;
 var delivery_data = [];
 
-var chart_doses_per_day = null;
-var chart_good_for = null;
-var chart_unused = null;
+var charts = {
+    "doses_per_day": {
+    },
+    "good_for": {
+        y_axis_ticks: {
+            min: 0,
+            max: 60,
+        }
+    },
+    "unused": {
+    },
+};
 
 function update_vaccination_data(data) {
     vaccination_data = data;
@@ -72,80 +81,42 @@ function draw_charts() {
     let delivered_doses = [];
     let next_delivery_index = 0;
 
-    let datasets_doses_per_day = [];
-    let datasets_good_for = [];
-    let datasets_unused = [];
+    let chart_labels = [];
+    for (chart_name in charts) {
+        charts[chart_name].datasets = [];
+    }
 
     for (state_index in states) {
         delivered_doses[state_index] = 0;
 
         let state = states[state_index];
-        datasets_doses_per_day.push({
-            label: state.name,
-            backgroundColor: state.color,
-            borderColor: state.color,
-            borderWidth: 2,
+
+        for (chart_name in charts) {
+            charts[chart_name].datasets.push({
+                label: state.name,
+                backgroundColor: state.color,
+                borderColor: state.color,
+                borderWidth: 2,
+                lineTension: 0,
+                pointRadius: 1.5,
+                pointHitRadius: 4,
+                hidden: state.hidden,
+                fill: false,
+                data: [],
+            });
+        }
+    }
+
+    for (chart_name in charts) {
+        charts[chart_name].datasets.push({
+            label: "Deutschland",
+            backgroundColor: "#000000",
+            borderColor: "#000000",
             lineTension: 0,
-            pointRadius: 1.5,
-            pointHitRadius: 4,
-            hidden: state.hidden,
-            fill: false,
-            data: [],
-        });
-        datasets_good_for.push({
-            label: state.name,
-            backgroundColor: state.color,
-            borderColor: state.color,
-            borderWidth: 2,
-            lineTension: 0,
-            pointRadius: 1.5,
-            pointHitRadius: 4,
-            hidden: state.hidden,
-            fill: false,
-            data: [],
-        });
-        datasets_unused.push({
-            label: state.name,
-            backgroundColor: state.color,
-            borderColor: state.color,
-            borderWidth: 2,
-            lineTension: 0,
-            pointRadius: 1.5,
-            pointHitRadius: 4,
-            hidden: state.hidden,
             fill: false,
             data: [],
         });
     }
-
-    datasets_doses_per_day.push({
-        label: "Deutschland",
-        backgroundColor: "#000000",
-        borderColor: "#000000",
-        lineTension: 0,
-        fill: false,
-        data: [],
-    });
-    datasets_good_for.push({
-        label: "Deutschland",
-        backgroundColor: "#000000",
-        borderColor: "#000000",
-        lineTension: 0,
-        fill: false,
-        data: [],
-    });
-    datasets_unused.push({
-        label: "Deutschland",
-        backgroundColor: "#000000",
-        borderColor: "#000000",
-        lineTension: 0,
-        fill: false,
-        data: [],
-    });
-
-    let labels_doses_per_day = [];
-    let labels_good_for = [];
-    let labels_unused = [];
 
     for (let date_str in vaccination_data) {
         let date = new Date(date_str);
@@ -173,9 +144,7 @@ function draw_charts() {
         }
 
         if (previous_week_date_str in vaccination_data) {
-            labels_doses_per_day.push(date);
-            labels_good_for.push(date);
-            labels_unused.push(date);
+            chart_labels.push(date);
         }
 
         let sum_new_doses = 0;
@@ -200,9 +169,9 @@ function draw_charts() {
                 sum_new_doses += new_doses;
                 sum_doses_available += doses_available;
 
-                datasets_doses_per_day[state_index].data.push(daily_new_doses_rate);
-                datasets_good_for[state_index].data.push(doses_good_for);
-                datasets_unused[state_index].data.push(doses_unused_rate);
+                charts["doses_per_day"].datasets[state_index].data.push(daily_new_doses_rate);
+                charts["good_for"].datasets[state_index].data.push(doses_good_for);
+                charts["unused"].datasets[state_index].data.push(doses_unused_rate);
             }
         }
 
@@ -219,25 +188,19 @@ function draw_charts() {
             let doses_good_for = sum_doses_available / daily_new_doses;
             let doses_unused_rate = (sum_doses_available * 100) / sum_inhabitants;
 
-            datasets_doses_per_day[datasets_doses_per_day.length - 1].data.push(daily_new_doses_rate);
-            datasets_good_for[datasets_good_for.length - 1].data.push(doses_good_for);
-            datasets_unused[datasets_unused.length - 1].data.push(doses_unused_rate);
+            charts["doses_per_day"].datasets[16].data.push(daily_new_doses_rate);
+            charts["good_for"].datasets[16].data.push(doses_good_for);
+            charts["unused"].datasets[16].data.push(doses_unused_rate);
         }
     }
 
+    for (chart_name in charts) {
+        let chart = charts[chart_name];
+        if (chart.chart_object) {
+            chart.chart_object.destroy();
+        }
 
-    if (chart_doses_per_day != null) {
-        chart_doses_per_day.destroy();
-    }
-
-    let ctx_doses_per_day = document.getElementById('chart_doses_per_day').getContext('2d');
-    chart_doses_per_day = new Chart(ctx_doses_per_day, {
-        type: 'line',
-        data: {
-            labels: labels_doses_per_day,
-            datasets: datasets_doses_per_day,
-        },
-        options: {
+        let chart_options = {
             scales: {
                 xAxes: [{
                     type: 'time',
@@ -249,67 +212,25 @@ function draw_charts() {
                     }
                 }]
             },
+        };
+
+        if (chart.y_axis_ticks) {
+            chart_options.scales.yAxes = [{
+                display: true,
+                ticks: chart.y_axis_ticks,
+            }];
         }
-    });
 
-    if (chart_good_for != null) {
-        chart_good_for.destroy();
-    }
-
-    let ctx_good_for = document.getElementById('chart_good_for').getContext('2d');
-    chart_good_for = new Chart(ctx_good_for, {
-        type: 'line',
-        data: {
-            labels: labels_good_for,
-            datasets: datasets_good_for,
-        },
-        options: {
-            scales: {
-                xAxes: [{
-                    type: 'time',
-                    time: {
-                        tooltipFormat: 'dddd, DD.MM.YYYY',
-                        displayFormats: {
-                            day: 'DD.MM.',
-                        }
-                    }
-                }],
-                yAxes: [{
-                    display: true,
-                    ticks: {
-                        min: 0,
-                        max: 60,
-                    }
-                }],
+        let ctx = document.getElementById('chart_' + chart_name).getContext('2d');
+        chart.chart_object = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chart_labels,
+                datasets: chart.datasets,
             },
-        }
-    });
-
-    if (chart_unused != null) {
-        chart_unused.destroy();
+            options: chart_options,
+        });
     }
-
-    let ctx_unused = document.getElementById('chart_unused').getContext('2d');
-    chart_unused = new Chart(ctx_unused, {
-        type: 'line',
-        data: {
-            labels: labels_unused,
-            datasets: datasets_unused,
-        },
-        options: {
-            scales: {
-                xAxes: [{
-                    type: 'time',
-                    time: {
-                        tooltipFormat: 'dddd, DD.MM.YYYY',
-                        displayFormats: {
-                            day: 'DD.MM.',
-                        }
-                    }
-                }],
-            },
-        }
-    });
 }
 
 function count_doses(vaccination_day_data, state_index, only_vaccine) {
