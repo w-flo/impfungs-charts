@@ -268,6 +268,7 @@ function draw_charts() {
                 xAxes: [{
                     type: 'time',
                     time: {
+                        tooltipFormat: 'dddd, DD.MM.YYYY',
                         displayFormats: {
                             day: 'DD.MM.',
                         }
@@ -300,6 +301,7 @@ function draw_charts() {
                 xAxes: [{
                     type: 'time',
                     time: {
+                        tooltipFormat: 'dddd, DD.MM.YYYY',
                         displayFormats: {
                             day: 'DD.MM.',
                         }
