@@ -212,6 +212,9 @@ function draw_charts() {
                     }
                 }]
             },
+            legend: {
+                onClick: on_legend_click,
+            }
         };
 
         if (chart.y_axis_ticks) {
@@ -242,6 +245,18 @@ function count_doses(vaccination_day_data, state_index, only_vaccine) {
         }
     }
     return result;
+}
+
+function on_legend_click(e, legend_item) {
+    var index = legend_item.datasetIndex;
+    var meta = this.chart.getDatasetMeta(index);
+    new_hidden = meta.hidden === null ? !this.chart.data.datasets[index].hidden : null;
+
+    for (chart_name in charts) {
+        let chart_object = charts[chart_name].chart_object;
+        chart_object.getDatasetMeta(index).hidden = new_hidden;
+        chart_object.update();
+    }
 }
 
 let fetch_vaccination_data = fetch('./vaccination-data.json')
