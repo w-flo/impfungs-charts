@@ -264,6 +264,19 @@ function on_legend_click(e, legend_item) {
     }
 }
 
+function show_all() {
+    germany_hidden = false;
+    for (let index = 0; index <= 16; index++) {
+        if (index < 16) states[index].hidden = false;
+
+        for (chart_name in charts) {
+            let chart_object = charts[chart_name].chart_object;
+            chart_object.getDatasetMeta(index).hidden = (index < 16) ?states[index].hidden :germany_hidden;
+            chart_object.update();
+        }
+    }
+}
+
 let fetch_vaccination_data = fetch('./vaccination-data.json')
     .then(response => response.json())
     .then(update_vaccination_data);
@@ -276,3 +289,4 @@ Promise.all([fetch_delivery_data, fetch_vaccination_data])
     .then(draw_charts);
 
 document.getElementById('select_vaccine').addEventListener('change', draw_charts);
+document.getElementById('show_all').addEventListener('click', show_all);
