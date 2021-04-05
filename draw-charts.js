@@ -67,13 +67,15 @@ function update_delivery_data(tsv_string) {
         let values = line.split('\t');
 
         let data = {};
-        data.date = values[0];
+        data.date = new Date(values[0]);
         data.vaccine = values[1];
         data.state = state_to_index[values[2]];
         data.doses = parseInt(values[3]);
 
         delivery_data.push(data);
     }
+
+    delivery_data.sort((delivery1, delivery2) => delivery1.date - delivery2.date);
 }
 
 function draw_charts() {
@@ -128,8 +130,8 @@ function draw_charts() {
 
         if (next_delivery_index < delivery_data.length) {
             let next_delivery = delivery_data[next_delivery_index];
-            let next_delivery_date = new Date(next_delivery.date);
-            while (next_delivery_date <= date) {
+
+            while (next_delivery.date <= date) {
                 if (only_vaccine == next_delivery.vaccine || only_vaccine == "") {
                     delivered_doses[next_delivery.state] += next_delivery.doses;
                 }
@@ -141,7 +143,6 @@ function draw_charts() {
                     break;
                 }
                 next_delivery = delivery_data[next_delivery_index];
-                next_delivery_date = new Date(next_delivery.date);
             }
         }
 
@@ -285,7 +286,11 @@ let fetch_delivery_data = fetch('./germany_deliveries_timeseries_v2.tsv')
     .then(response => response.text())
     .then(update_delivery_data);
 
-Promise.all([fetch_delivery_data, fetch_vaccination_data])
+let fetch_expected_deliveries = fetch('./expected_deliveries.tsv')
+    .then(response => response.text())
+    .then(update_delivery_data);
+
+Promise.all([fetch_delivery_data, fetch_vaccination_data, fetch_expected_deliveries])
     .then(draw_charts);
 
 document.getElementById('select_vaccine').addEventListener('change', draw_charts);
