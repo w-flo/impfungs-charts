@@ -122,6 +122,11 @@ function draw_charts() {
         });
     }
 
+    // Last day of the week in which delivery data ends. Draw delivery-based charts up to this date.
+    let delivery_data_end = new Date(delivery_data[delivery_data.length - 1].date);
+    delivery_data_end.setDate(delivery_data_end.getDate() - delivery_data_end.getDay() + 7);
+    delivery_data_end.setHours(23);
+
     for (let date_str in vaccination_data) {
         let date = new Date(date_str);
         let previous_week_date = new Date(date_str);
@@ -173,8 +178,11 @@ function draw_charts() {
                 sum_doses_available += doses_available;
 
                 charts["doses_per_day"].datasets[state_index].data.push(daily_new_doses_rate);
-                charts["good_for"].datasets[state_index].data.push(doses_good_for);
-                charts["unused"].datasets[state_index].data.push(doses_unused_rate);
+
+                if (delivery_data_end > date) {
+                    charts["good_for"].datasets[state_index].data.push(doses_good_for);
+                    charts["unused"].datasets[state_index].data.push(doses_unused_rate);
+                }
             }
         }
 
@@ -192,8 +200,11 @@ function draw_charts() {
             let doses_unused_rate = (sum_doses_available * 100) / sum_inhabitants;
 
             charts["doses_per_day"].datasets[16].data.push(daily_new_doses_rate);
-            charts["good_for"].datasets[16].data.push(doses_good_for);
-            charts["unused"].datasets[16].data.push(doses_unused_rate);
+
+            if (delivery_data_end > date) {
+                charts["good_for"].datasets[16].data.push(doses_good_for);
+                charts["unused"].datasets[16].data.push(doses_unused_rate);
+            }
         }
     }
 
