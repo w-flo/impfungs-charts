@@ -60,6 +60,7 @@ function update_delivery_data(tsv_string) {
         "DE-ST": 13,
         "DE-SH": 14,
         "DE-TH": 15,
+        "DE-BUND": 16,
     };
 
     let lines = tsv_string.trim().split('\n');
@@ -110,6 +111,7 @@ function draw_charts() {
         }
     }
 
+    delivered_doses[16] = 0;
     for (chart_name in charts) {
         charts[chart_name].datasets.push({
             label: "Deutschland",
@@ -187,7 +189,8 @@ function draw_charts() {
         }
 
         if (previous_week_date_str in vaccination_data) {
-            // Special "federal" vaccinations that are not registered with a state
+            // Special "federal" deliveries and vaccinations that are not registered with a state
+            sum_doses_available += delivered_doses[16];
             let federal_total_doses = count_doses(vaccination_data[date_str], 16, only_vaccine);
             let previous_week_federal_doses = count_doses(vaccination_data[previous_week_date_str], 16, only_vaccine);
             let federal_new_doses = federal_total_doses - previous_week_federal_doses;
