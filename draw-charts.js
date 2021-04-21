@@ -124,9 +124,10 @@ function draw_charts() {
         });
     }
 
-    // Last day of the week in which delivery data ends. Draw delivery-based charts up to this date.
+    // Last day of the week (Sunday) in which delivery data ends. Draw delivery-based charts up to this date.
     let delivery_data_end = new Date(delivery_data[delivery_data.length - 1].date);
-    delivery_data_end.setDate(delivery_data_end.getDate() - delivery_data_end.getDay() + 7);
+    let day_of_week = (delivery_data_end.getDay() + 6) % 7; // 0 = Monday, 6 = Sunday
+    delivery_data_end.setDate(delivery_data_end.getDate() - day_of_week + 6);
     delivery_data_end.setHours(23);
 
     for (let date_str in vaccination_data) {
