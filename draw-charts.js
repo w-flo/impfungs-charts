@@ -259,7 +259,11 @@ function count_doses(vaccination_day_data, state_index, only_vaccine) {
     for (vaccine in vaccination_day_data) {
         if (vaccine == only_vaccine || only_vaccine == "") {
             let vaccine_doses = vaccination_day_data[vaccine];
-            result += vaccine_doses[state_index * 2] + vaccine_doses[state_index * 2 + 1];
+            if (vaccine_doses.length == 34) { // two-dose vaccine
+                result += vaccine_doses[state_index * 2] + vaccine_doses[state_index * 2 + 1];
+            } else { // single dose vaccine
+                result += vaccine_doses[state_index];
+            }
         }
     }
     return result;
