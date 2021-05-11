@@ -223,6 +223,8 @@ function draw_charts() {
                 xAxes: [{
                     type: 'time',
                     time: {
+                        unit: 'week',
+                        isoWeekday: true,
                         tooltipFormat: 'dddd, DD.MM.YYYY',
                         displayFormats: {
                             day: 'DD.MM.',
