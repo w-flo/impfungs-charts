@@ -81,6 +81,8 @@ function update_delivery_data(tsv_string) {
 
 function draw_charts() {
     let only_vaccine = document.getElementById('select_vaccine').value;
+    let dose_type = document.getElementById('select_dose_type').value;
+    let site = document.getElementById('select_site').value;
 
     let delivered_doses = [];
     let next_delivery_index = 0;
@@ -159,18 +161,24 @@ function draw_charts() {
         }
 
         let sum_new_doses = 0;
+        let sum_filtered_new_doses = 0;
         let sum_doses_available = 0;
 
         for (state_index in states) {
             let state = states[state_index];
 
             let total_doses = count_doses(vaccination_data[date_str], state_index, only_vaccine);
+            let filtered_total_doses = count_doses(vaccination_data[date_str], state_index, only_vaccine, dose_type, site);
 
             if (previous_week_date_str in vaccination_data) {
                 let previous_week_doses = count_doses(vaccination_data[previous_week_date_str], state_index, only_vaccine);
                 let new_doses = total_doses - previous_week_doses;
                 let daily_new_doses = new_doses / 7;
-                let daily_new_doses_rate = (daily_new_doses * 100) / state.inhabitants;
+
+                let filtered_previous_week_doses = count_doses(vaccination_data[previous_week_date_str], state_index, only_vaccine, dose_type, site);
+                let filtered_new_doses = filtered_total_doses - filtered_previous_week_doses;
+                let filtered_daily_new_doses = filtered_new_doses / 7;
+                let filtered_daily_new_doses_rate = (filtered_daily_new_doses * 100) / state.inhabitants;
 
                 let doses_available = delivered_doses[state_index] - total_doses;
                 let doses_good_for = doses_available / daily_new_doses;
@@ -178,9 +186,10 @@ function draw_charts() {
                 let doses_unused_rate = (doses_available * 100) / state.inhabitants;
 
                 sum_new_doses += new_doses;
+                sum_filtered_new_doses += filtered_new_doses;
                 sum_doses_available += doses_available;
 
-                charts["doses_per_day"].datasets[state_index].data.push(daily_new_doses_rate);
+                charts["doses_per_day"].datasets[state_index].data.push(filtered_daily_new_doses_rate);
 
                 if (delivery_data_end > date) {
                     charts["good_for"].datasets[state_index].data.push(doses_good_for);
@@ -197,13 +206,19 @@ function draw_charts() {
             let federal_new_doses = federal_total_doses - previous_week_federal_doses;
             sum_doses_available -= federal_total_doses;
 
+            let filtered_federal_total_doses = count_doses(vaccination_data[date_str], 16, only_vaccine, dose_type, site);
+            let filtered_previous_week_federal_doses = count_doses(vaccination_data[previous_week_date_str], 16, only_vaccine, dose_type, site);
+            let filtered_federal_new_doses = filtered_federal_total_doses - filtered_previous_week_federal_doses;
+
             // Calculations for all of Germany
+            let filtered_daily_new_doses = (sum_filtered_new_doses + filtered_federal_new_doses) / 7;
+            let filtered_daily_new_doses_rate = (filtered_daily_new_doses * 100) / sum_inhabitants;
+
             let daily_new_doses = (sum_new_doses + federal_new_doses) / 7;
-            let daily_new_doses_rate = (daily_new_doses * 100) / sum_inhabitants;
             let doses_good_for = sum_doses_available / daily_new_doses;
             let doses_unused_rate = (sum_doses_available * 100) / sum_inhabitants;
 
-            charts["doses_per_day"].datasets[16].data.push(daily_new_doses_rate);
+            charts["doses_per_day"].datasets[16].data.push(filtered_daily_new_doses_rate);
 
             if (delivery_data_end > date) {
                 charts["good_for"].datasets[16].data.push(doses_good_for);
@@ -256,15 +271,35 @@ function draw_charts() {
     }
 }
 
-function count_doses(vaccination_day_data, state_index, only_vaccine) {
+function count_doses(vaccination_day_data, state_index, only_vaccine = "", dose_type = "", site = "") {
     let result = 0;
     for (vaccine in vaccination_day_data) {
         if (vaccine == only_vaccine || only_vaccine == "") {
             let vaccine_doses = vaccination_day_data[vaccine];
-            if (vaccine_doses.length == 34) { // two-dose vaccine
-                result += vaccine_doses[state_index * 2] + vaccine_doses[state_index * 2 + 1];
+            if (vaccine_doses.length == (16 + 1) * 2 * 2) { // two-dose vaccine
+                if (dose_type == "first_dose" || dose_type == "") {
+                    if (site == "vaccination_centre" || site == "") {
+                        result += vaccine_doses[state_index * 4 + 0];
+                    }
+                    if (site == "doctors_office" || site == "") {
+                        result += vaccine_doses[state_index * 4 + 1];
+                    }
+                }
+                if (dose_type == "second_dose" || dose_type == "") {
+                    if (site == "vaccination_centre" || site == "") {
+                        result += vaccine_doses[state_index * 4 + 2];
+                    }
+                    if (site == "doctors_office" || site == "") {
+                        result += vaccine_doses[state_index * 4 + 3];
+                    }
+                }
             } else { // single dose vaccine
-                result += vaccine_doses[state_index];
+                if (site == "vaccination_centre" || site == "") {
+                    result += vaccine_doses[state_index * 2 + 0];
+                }
+                if (site == "doctors_office" || site == "") {
+                    result += vaccine_doses[state_index * 2 + 1];
+                }
             }
         }
     }
@@ -316,3 +351,5 @@ Promise.all([fetch_delivery_data, fetch_vaccination_data, fetch_expected_deliver
 
 document.getElementById('select_vaccine').addEventListener('change', draw_charts);
 document.getElementById('show_all').addEventListener('click', show_all);
+document.getElementById('select_site').addEventListener('change', draw_charts);
+document.getElementById('select_dose_type').addEventListener('change', draw_charts);

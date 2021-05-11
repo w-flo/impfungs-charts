@@ -49,6 +49,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     <button id="show_all">Alle Bundesländer aktivieren</button>
     
     <h2>Tägliche Zahl der Impfungen pro 100 Einwohner im Schnitt der letzten 7 Tage</h2>
+    <select id="select_site" size="1">
+        <option value="">Impfzentren, mobile Teams, Kliniken und niedergelassene Ärzte</option>
+        <option value="vaccination_centre">nur Impfzentren, mobile Teams und Kliniken</option>
+        <option value="doctors_office">nur niedergelassene Ärzte</option>
+    </select>
+    <select id="select_dose_type" size="1">
+        <option value="">Erstimpfungen, Zweitimpfungen und Impfungen mit Janssen / Johnson & Johnson</option>
+        <option value="first_dose">nur Erstimpfungen und Impfungen mit Janssen / Johnson & Johnson</option>
+        <option value="second_dose">nur Zweitimpfungen und Impfungen mit Janssen / Johnson & Johnson</option>
+    </select>
     <canvas id="chart_doses_per_day" width="400" height="130"></canvas>
     
     <h2>Reichweite des Lagerbestandes in Tagen, bei der Impfgeschwindigkeit der letzten 7 Tage</h2>
