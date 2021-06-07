@@ -170,7 +170,7 @@ function draw_charts() {
             let total_doses = count_doses(vaccination_data[date_str], state_index, only_vaccine);
             let filtered_total_doses = count_doses(vaccination_data[date_str], state_index, only_vaccine, dose_type, site);
 
-            if (previous_week_date_str in vaccination_data) {
+            if (previous_week_date_str in vaccination_data && filtered_total_doses != null) {
                 let previous_week_doses = count_doses(vaccination_data[previous_week_date_str], state_index, only_vaccine);
                 let new_doses = total_doses - previous_week_doses;
                 let daily_new_doses = new_doses / 7;
@@ -207,22 +207,24 @@ function draw_charts() {
             sum_doses_available -= federal_total_doses;
 
             let filtered_federal_total_doses = count_doses(vaccination_data[date_str], 16, only_vaccine, dose_type, site);
-            let filtered_previous_week_federal_doses = count_doses(vaccination_data[previous_week_date_str], 16, only_vaccine, dose_type, site);
-            let filtered_federal_new_doses = filtered_federal_total_doses - filtered_previous_week_federal_doses;
+            if (filtered_federal_total_doses != null) {
+                let filtered_previous_week_federal_doses = count_doses(vaccination_data[previous_week_date_str], 16, only_vaccine, dose_type, site);
+                let filtered_federal_new_doses = filtered_federal_total_doses - filtered_previous_week_federal_doses;
 
-            // Calculations for all of Germany
-            let filtered_daily_new_doses = (sum_filtered_new_doses + filtered_federal_new_doses) / 7;
-            let filtered_daily_new_doses_rate = (filtered_daily_new_doses * 100) / sum_inhabitants;
+                // Calculations for all of Germany
+                let filtered_daily_new_doses = (sum_filtered_new_doses + filtered_federal_new_doses) / 7;
+                let filtered_daily_new_doses_rate = (filtered_daily_new_doses * 100) / sum_inhabitants;
 
-            let daily_new_doses = (sum_new_doses + federal_new_doses) / 7;
-            let doses_good_for = sum_doses_available / daily_new_doses;
-            let doses_unused_rate = (sum_doses_available * 100) / sum_inhabitants;
+                let daily_new_doses = (sum_new_doses + federal_new_doses) / 7;
+                let doses_good_for = sum_doses_available / daily_new_doses;
+                let doses_unused_rate = (sum_doses_available * 100) / sum_inhabitants;
 
-            charts["doses_per_day"].datasets[16].data.push(filtered_daily_new_doses_rate);
+                charts["doses_per_day"].datasets[16].data.push(filtered_daily_new_doses_rate);
 
-            if (delivery_data_end > date) {
-                charts["good_for"].datasets[16].data.push(doses_good_for);
-                charts["unused"].datasets[16].data.push(doses_unused_rate);
+                if (delivery_data_end > date) {
+                    charts["good_for"].datasets[16].data.push(doses_good_for);
+                    charts["unused"].datasets[16].data.push(doses_unused_rate);
+                }
             }
         }
     }
@@ -272,11 +274,22 @@ function draw_charts() {
 }
 
 function count_doses(vaccination_day_data, state_index, only_vaccine = "", dose_type = "", site = "") {
+    let type = vaccination_day_data['type'];
     let result = 0;
-    for (vaccine in vaccination_day_data) {
+    for (vaccine in vaccination_day_data['data']) {
         if (vaccine == only_vaccine || only_vaccine == "") {
-            let vaccine_doses = vaccination_day_data[vaccine];
-            if (vaccine_doses.length == (16 + 1) * 2 * 2) { // two-dose vaccine
+            let vaccine_doses = vaccination_day_data['data'][vaccine];
+
+            if (type == "nogp") { // always two doses
+                if (site == "vaccination_centre" || site == "") {
+                    if (dose_type == "first_dose" || dose_type == "") {
+                        result += vaccine_doses[state_index * 2 + 0];
+                    }
+                    if (dose_type == "second_dose" || dose_type == "") {
+                        result += vaccine_doses[state_index * 2 + 1];
+                    }
+                }
+            } else if (type == "gp" && vaccine_doses.length == (16 + 1) * 2 * 2) { // two-dose vaccine
                 if (dose_type == "first_dose" || dose_type == "") {
                     if (site == "vaccination_centre" || site == "") {
                         result += vaccine_doses[state_index * 4 + 0];
@@ -293,13 +306,33 @@ function count_doses(vaccination_day_data, state_index, only_vaccine = "", dose_
                         result += vaccine_doses[state_index * 4 + 3];
                     }
                 }
-            } else { // single dose vaccine
+            } else if (type == "gp" && vaccine_doses.length == (16 + 1) * 2) { // single dose vaccine
                 if (site == "vaccination_centre" || site == "") {
                     result += vaccine_doses[state_index * 2 + 0];
                 }
                 if (site == "doctors_office" || site == "") {
                     result += vaccine_doses[state_index * 2 + 1];
                 }
+            } else if (type == "combined" && vaccine_doses.length == (16 + 1) * 2) { // two-dose vaccine
+                if (site == "") {
+                    if (dose_type == "first_dose" || dose_type == "") {
+                        result += vaccine_doses[state_index * 2 + 0];
+                    }
+                    if (dose_type == "second_dose" || dose_type == "") {
+                        result += vaccine_doses[state_index * 2 + 1];
+                    }
+                } else {
+                    return null;
+                }
+            } else if (type == "combined" && vaccine_doses.length == (16 + 1)) { // single dose vaccine
+                if (site == "") {
+                    result += vaccine_doses[state_index];
+                } else {
+                    return null;
+                }
+            } else {
+                console.log("Invalid count request!");
+                return null;
             }
         }
     }
