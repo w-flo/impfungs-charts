@@ -61,11 +61,17 @@ function update_delivery_data(tsv_string) {
         "DE-SH": 14,
         "DE-TH": 15,
         "DE-BUND": 16,
+        "DE-Betriebe": 16,
     };
 
     let lines = tsv_string.trim().split('\n');
     for (let line of lines.slice(1, lines.length)) {
         let values = line.split('\t');
+
+        if (!(values[2] in state_to_index)) {
+            console.log("Invalid state", values[2]);
+            continue;
+        }
 
         let data = {};
         data.date = new Date(values[0]);
