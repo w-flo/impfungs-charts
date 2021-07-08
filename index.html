@@ -40,35 +40,44 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         Die Qualität ist laut RKI-Angaben bei diesen Daten schlecht, da nicht jede durch einen Betriebsarzt erfolgte Impfung für das RKI als solche zu erkennen ist. Es gehen also teilweise auch von Betriebsärzten durchgeführte Impfungen in die Zahl der Arztpraxis- oder Impfzentrumsimpfungen ein.
     </p>
 
-    <select id="select_vaccine" size="1">
-        <option value="">Alle Impfstoffe</option>
-        <option value="comirnaty">nur BioNTech / Pfizer</option>
-        <option value="moderna">nur Moderna</option>
-        <option value="astra">nur Oxford / AstraZeneca</option>
-        <option value="johnson">nur Janssen / Johnson & Johnson</option>
-    </select>
+    <p>
+        Darstellung:
 
-    <button id="show_all">Alle Bundesländer aktivieren</button>
-    
-    <h2>Tägliche Zahl der Impfungen pro 100 Einwohner im Schnitt der letzten 7 Tage</h2>
-    <select id="select_site" size="1">
-        <option value="">Impfzentren, mobile Teams, Kliniken und niedergelassene Ärzte</option>
-        <option value="vaccination_centre">nur Impfzentren, mobile Teams und Kliniken</option>
-        <option value="doctors_office">nur niedergelassene Ärzte</option>
-        <option value="company">nur Betriebsärzte</option>
-    </select>
-    <select id="select_dose_type" size="1">
-        <option value="">Erstimpfungen, Zweitimpfungen und Impfungen mit Janssen / Johnson & Johnson</option>
-        <option value="first_dose">nur Erstimpfungen und Impfungen mit Janssen / Johnson & Johnson</option>
-        <option value="second_dose">nur Zweitimpfungen und Impfungen mit Janssen / Johnson & Johnson</option>
-    </select>
-    <canvas id="chart_doses_per_day" width="400" height="130"></canvas>
-    
-    <h2>Reichweite des Lagerbestandes in Tagen, bei der Impfgeschwindigkeit der letzten 7 Tage</h2>
-    <canvas id="chart_good_for" width="400" height="130"></canvas>
+        <select id="select_chart" size="1">
+            <option value="doses_per_day">Tägliche Zahl der Impfungen pro 100 Einwohner im 7-Tage-Schnitt</option>
+            <option value="total_doses">Insgesamt verabreichte Dosen pro 100 Einwohner</option>
+            <option value="inventory_range">Reichweite des Lagerbestandes in Tagen, bei der Impfgeschwindigkeit der letzten 7 Tage</option>
+            <option value="inventory">Lagerbestand in Dosen pro 100 Einwohner</option>
+        </select>
 
-    <h2>Lagerbestand: Dosen pro 100 Einwohner</h2>
-    <canvas id="chart_unused" width="400" height="130"></canvas>
+        <button id="show_all">Alle Bundesländer aktivieren</button>
+    </p>
+
+    <p>
+        Filter:
+
+        <select id="select_vaccine" size="1">
+            <option value="">Alle Impfstoffe</option>
+            <option value="comirnaty">nur BioNTech / Pfizer</option>
+            <option value="moderna">nur Moderna</option>
+            <option value="astra">nur Oxford / AstraZeneca</option>
+            <option value="johnson">nur Janssen / Johnson & Johnson</option>
+        </select>
+
+        <select id="select_site" size="1">
+            <option value="">Impfzentren, mobile Teams, Kliniken und niedergelassene Ärzte</option>
+            <option value="vaccination_centre">nur Impfzentren, mobile Teams und Kliniken</option>
+            <option value="doctors_office">nur niedergelassene Ärzte</option>
+            <option value="company">nur Betriebsärzte</option>
+        </select>
+        <select id="select_dose_type" size="1">
+            <option value="">Erstimpfungen, Zweitimpfungen und Impfungen mit Janssen / Johnson & Johnson</option>
+            <option value="first_dose">nur Erstimpfungen und Impfungen mit Janssen / Johnson & Johnson</option>
+            <option value="second_dose">nur Zweitimpfungen und Impfungen mit Janssen / Johnson & Johnson</option>
+        </select>
+    </p>
+
+    <canvas id="chart" width="400" height="130"></canvas>
 
     <script type="text/javascript" src="Chart.js/Chart.bundle.min.js"></script>
     <script type="text/javascript" src="draw-charts.js"></script>

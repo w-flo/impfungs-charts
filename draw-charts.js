@@ -26,18 +26,7 @@ var vaccination_data;
 var per_site_data = {};
 var delivery_data = [];
 
-var charts = {
-    "doses_per_day": {
-    },
-    "good_for": {
-        y_axis_ticks: {
-            min: 0,
-            max: 60,
-        }
-    },
-    "unused": {
-    },
-};
+var chart = null;
 
 function update_vaccination_data(data) {
     vaccination_data = data;
@@ -106,52 +95,77 @@ function update_per_site_data(tsv_string) {
     }
 }
 
-function draw_charts() {
+var charts = {
+    "doses_per_day": {
+    },
+    "total_doses": {
+    },
+    "inventory_range": {
+        y_axis_ticks: {
+            min: 0,
+            max: 60,
+        }
+    },
+    "inventory": {
+    },
+};
+
+function draw_chart() {
+    console.time("chart update");
+
+    let chart_type = document.getElementById('select_chart').value;
     let only_vaccine = document.getElementById('select_vaccine').value;
     let dose_type = document.getElementById('select_dose_type').value;
     let site = document.getElementById('select_site').value;
+
+    if (chart_type == "inventory_range" || chart_type == "inventory") {
+        // There is no separate inventory for first/second doses
+        // And we don't have reliable per-site delivery data
+
+        dose_type = "";
+        site = "";
+        document.getElementById('select_dose_type').disabled = true;
+        document.getElementById('select_site').disabled = true;
+    } else {
+        document.getElementById('select_dose_type').disabled = false;
+        document.getElementById('select_site').disabled = false;
+    }
 
     let delivered_doses = [];
     let next_delivery_index = 0;
 
     let chart_labels = [];
-    for (chart_name in charts) {
-        charts[chart_name].datasets = [];
-    }
+    let chart_datasets = [];
 
     for (state_index in states) {
         delivered_doses[state_index] = 0;
 
         let state = states[state_index];
 
-        for (chart_name in charts) {
-            charts[chart_name].datasets.push({
-                label: state.name,
-                backgroundColor: state.color,
-                borderColor: state.color,
-                borderWidth: 2,
-                lineTension: 0,
-                pointRadius: 1.5,
-                pointHitRadius: 4,
-                hidden: state.hidden,
-                fill: false,
-                data: [],
-            });
-        }
-    }
-
-    delivered_doses[16] = 0;
-    for (chart_name in charts) {
-        charts[chart_name].datasets.push({
-            label: "Deutschland",
-            backgroundColor: "#000000",
-            borderColor: "#000000",
+        chart_datasets.push({
+            label: state.name,
+            backgroundColor: state.color,
+            borderColor: state.color,
+            borderWidth: 2,
             lineTension: 0,
-            hidden: germany_hidden,
+            pointRadius: 1.5,
+            pointHitRadius: 4,
+            hidden: state.hidden,
             fill: false,
             data: [],
         });
     }
+
+    delivered_doses[16] = 0;
+    chart_datasets.push({
+        label: "Deutschland",
+        backgroundColor: "#000000",
+        borderColor: "#000000",
+        lineTension: 0,
+        hidden: germany_hidden,
+        fill: false,
+        data: [],
+    });
 
     // Last day of the week (Sunday) in which delivery data ends. Draw delivery-based charts up to this date.
     let delivery_data_end = new Date(delivery_data[delivery_data.length - 1].date);
@@ -159,6 +173,7 @@ function draw_charts() {
     delivery_data_end.setDate(delivery_data_end.getDate() - day_of_week + 6);
     delivery_data_end.setHours(23);
 
+    date_loop:
     for (let date_str in vaccination_data) {
         let date = new Date(date_str);
         let previous_week_date = new Date(date_str);
@@ -173,7 +188,6 @@ function draw_charts() {
                     delivered_doses[next_delivery.state] += next_delivery.doses;
                 }
 
-
                 next_delivery_index++;
 
                 if (next_delivery_index >= delivery_data.length) {
@@ -183,124 +197,137 @@ function draw_charts() {
             }
         }
 
-        if (previous_week_date_str in vaccination_data) {
-            chart_labels.push(date);
-        }
+        let all_states_today_doses = null;
+        let all_states_previous_week_doses = null;
+        let all_states_available_doses = null;
 
-        let sum_new_doses = 0;
-        let sum_filtered_new_doses = 0;
-        let sum_doses_available = 0;
-
-        for (state_index in states) {
+        for (let state_index in states) {
             let state = states[state_index];
+            let data_point = null;
 
-            let total_doses = count_doses(date_str, state_index, only_vaccine);
-            let filtered_total_doses = count_doses(date_str, state_index, only_vaccine, dose_type, site);
-            let previous_week_doses = count_doses(previous_week_date_str, state_index, only_vaccine);
-            let filtered_previous_week_doses = count_doses(previous_week_date_str, state_index, only_vaccine, dose_type, site);
-
-            if (previous_week_date_str in vaccination_data) {
-                let new_doses = total_doses - previous_week_doses;
-                sum_new_doses += new_doses;
-                let daily_new_doses = new_doses / 7;
-
-                if (filtered_total_doses != null && filtered_previous_week_doses != null) {
-                    let filtered_new_doses = filtered_total_doses - filtered_previous_week_doses;
-                    sum_filtered_new_doses += filtered_new_doses;
-                    let filtered_daily_new_doses = filtered_new_doses / 7;
-                    let filtered_daily_new_doses_rate = (filtered_daily_new_doses * 100) / state.inhabitants;
-                    charts["doses_per_day"].datasets[state_index].data.push(filtered_daily_new_doses_rate);
-                } else {
-                    charts["doses_per_day"].datasets[state_index].data.push(NaN);
-                }
-
-                let doses_available = delivered_doses[state_index] - total_doses;
-                sum_doses_available += doses_available;
-                let doses_good_for = doses_available / daily_new_doses;
-
-                let doses_unused_rate = (doses_available * 100) / state.inhabitants;
-
-                if (delivery_data_end > date) {
-                    charts["good_for"].datasets[state_index].data.push(doses_good_for);
-                    charts["unused"].datasets[state_index].data.push(doses_unused_rate);
-                }
-            }
-        }
-
-        if (previous_week_date_str in vaccination_data) {
-            // Special "federal" deliveries and vaccinations that are not registered with a state
-            sum_doses_available += delivered_doses[16];
-            let federal_total_doses = count_doses(date_str, 16, only_vaccine);
-            let previous_week_federal_doses = count_doses(previous_week_date_str, 16, only_vaccine);
-            let federal_new_doses = federal_total_doses - previous_week_federal_doses;
-            sum_doses_available -= federal_total_doses;
-
-            let filtered_federal_total_doses = count_doses(date_str, 16, only_vaccine, dose_type, site);
-            let filtered_previous_week_federal_doses = count_doses(previous_week_date_str, 16, only_vaccine, dose_type, site);
-
-            // Calculations for all of Germany
-            if (filtered_federal_total_doses != null && filtered_previous_week_federal_doses != null) {
-                let filtered_federal_new_doses = filtered_federal_total_doses - filtered_previous_week_federal_doses;
-                let filtered_daily_new_doses = (sum_filtered_new_doses + filtered_federal_new_doses) / 7;
-                let filtered_daily_new_doses_rate = (filtered_daily_new_doses * 100) / sum_inhabitants;
-                charts["doses_per_day"].datasets[16].data.push(filtered_daily_new_doses_rate);
+            let today_doses = count_doses(date_str, state_index, only_vaccine, dose_type, site);
+            if (today_doses != null) {
+                all_states_today_doses += today_doses;
             } else {
-                charts["doses_per_day"].datasets[16].data.push(NaN);
+                continue date_loop;
             }
 
-            let daily_new_doses = (sum_new_doses + federal_new_doses) / 7;
-            let doses_good_for = sum_doses_available / daily_new_doses;
-            let doses_unused_rate = (sum_doses_available * 100) / sum_inhabitants;
-
-            if (delivery_data_end > date) {
-                charts["good_for"].datasets[16].data.push(doses_good_for);
-                charts["unused"].datasets[16].data.push(doses_unused_rate);
+            let previous_week_doses = count_doses(previous_week_date_str, state_index, only_vaccine, dose_type, site);
+            if (previous_week_doses != null) {
+                all_states_previous_week_doses += previous_week_doses;
             }
+
+            let new_doses = today_doses - previous_week_doses;
+            let available_doses = delivered_doses[state_index] - today_doses;
+            all_states_available_doses += available_doses;
+
+            if (chart_type == "doses_per_day") {
+                if (previous_week_doses != null) {
+                    data_point = (new_doses * 100) / (state.inhabitants * 7);
+                }
+            } else if (chart_type == "total_doses") {
+                data_point = (today_doses * 100) / state.inhabitants;
+            } else if (chart_type == "inventory_range") {
+                if (previous_week_doses != null && date < delivery_data_end) {
+                    let daily_doses = new_doses / 7;
+                    data_point = available_doses / daily_doses;
+                }
+            } else if (chart_type == "inventory") {
+                if (date < delivery_data_end) {
+                    data_point = (available_doses * 100) / state.inhabitants;
+                }
+            }
+
+            if (state_index == 0) {
+                if (data_point != null) {
+                    chart_labels.push(date);
+                } else {
+                    continue date_loop;
+                }
+            }
+
+            chart_datasets[state_index].data.push(data_point);
         }
+
+        // All of Germany: include federal deliveries and vaccinations,
+        // as well as state-level deliveries and vaccinations
+        let data_point = NaN;
+        let federal_today_doses = count_doses(date_str, 16, only_vaccine, dose_type, site);
+        let federal_previous_week_doses = count_doses(previous_week_date_str, 16, only_vaccine, dose_type, site);
+        let federal_available_doses = delivered_doses[16] - federal_today_doses;
+
+        let today_doses = federal_today_doses + all_states_today_doses;
+        let previous_week_doses = federal_previous_week_doses + all_states_previous_week_doses;
+        let available_doses = federal_available_doses + all_states_available_doses;
+
+        let new_doses = today_doses - previous_week_doses;
+
+        if (chart_type == "doses_per_day") {
+            if (federal_previous_week_doses != null) {
+                data_point = (new_doses * 100) / (sum_inhabitants * 7);
+            }
+        } else if (chart_type == "total_doses") {
+            data_point = (today_doses * 100) / sum_inhabitants;
+        } else if (chart_type == "inventory_range") {
+            if (federal_previous_week_doses != null) {
+                let daily_doses = new_doses / 7;
+                data_point = available_doses / daily_doses;
+            }
+        } else if (chart_type == "inventory") {
+            data_point = (available_doses * 100) / sum_inhabitants;
+        }
+
+        chart_datasets[16].data.push(data_point);
     }
 
-    for (chart_name in charts) {
-        let chart = charts[chart_name];
-        if (chart.chart_object) {
-            chart.chart_object.destroy();
-        }
+    console.timeLog("chart update");
 
-        let chart_options = {
-            scales: {
-                xAxes: [{
-                    type: 'time',
-                    time: {
-                        unit: 'week',
-                        isoWeekday: true,
-                        tooltipFormat: 'dddd, DD.MM.YYYY',
-                        displayFormats: {
-                            day: 'DD.MM.',
-                        }
-                    }
-                }]
-            },
-            legend: {
-                onClick: on_legend_click,
-            }
-        };
-
-        if (chart.y_axis_ticks) {
-            chart_options.scales.yAxes = [{
-                display: true,
-                ticks: chart.y_axis_ticks,
-            }];
-        }
-
-        let ctx = document.getElementById('chart_' + chart_name).getContext('2d');
-        chart.chart_object = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: chart_labels,
-                datasets: chart.datasets,
-            },
-            options: chart_options,
-        });
+    if (chart != null) {
+        chart.destroy();
     }
+
+    let scale_end = new Date(delivery_data_end);
+    scale_end.setDate(scale_end.getDate() + 8);
+    let chart_options = {
+        scales: {
+            xAxes: [{
+                type: 'time',
+                time: {
+                    unit: 'week',
+                    isoWeekday: true,
+                    tooltipFormat: 'dddd, DD.MM.YYYY',
+                    displayFormats: {
+                        day: 'DD.MM.',
+                    },
+                },
+                ticks: {
+                    max: scale_end,
+                },
+            }]
+        },
+        legend: {
+            onClick: on_legend_click,
+        }
+    };
+
+    if (charts[chart_type].y_axis_ticks) {
+        chart_options.scales.yAxes = [{
+            display: true,
+            ticks: charts[chart_type].y_axis_ticks,
+        }];
+    }
+
+    let ctx = document.getElementById('chart').getContext('2d');
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chart_labels,
+            datasets: chart_datasets,
+        },
+        options: chart_options,
+    });
+
+    console.timeEnd("chart update");
 }
 
 function count_doses(date_str, state_index, only_vaccine = "", dose_type = "", site = "") {
@@ -387,11 +414,8 @@ function on_legend_click(e, legend_item) {
         germany_hidden = !germany_hidden;
     }
 
-    for (chart_name in charts) {
-        let chart_object = charts[chart_name].chart_object;
-        chart_object.getDatasetMeta(index).hidden = (index < 16) ?states[index].hidden :germany_hidden;
-        chart_object.update();
-    }
+    chart.getDatasetMeta(index).hidden = (index < 16) ?states[index].hidden :germany_hidden;
+    chart.update();
 }
 
 function show_all() {
@@ -399,11 +423,8 @@ function show_all() {
     for (let index = 0; index <= 16; index++) {
         if (index < 16) states[index].hidden = false;
 
-        for (chart_name in charts) {
-            let chart_object = charts[chart_name].chart_object;
-            chart_object.getDatasetMeta(index).hidden = (index < 16) ?states[index].hidden :germany_hidden;
-            chart_object.update();
-        }
+        chart.getDatasetMeta(index).hidden = (index < 16) ?states[index].hidden :germany_hidden;
+        chart.update();
     }
 }
 
@@ -424,9 +445,10 @@ let fetch_per_site_data = fetch('./vaccinations_per_site.tsv')
     .then(update_per_site_data);
 
 Promise.all([fetch_delivery_data, fetch_vaccination_data, fetch_expected_deliveries, fetch_per_site_data])
-    .then(draw_charts);
+    .then(draw_chart);
 
-document.getElementById('select_vaccine').addEventListener('change', draw_charts);
+document.getElementById('select_chart').addEventListener('change', draw_chart);
+document.getElementById('select_vaccine').addEventListener('change', draw_chart);
 document.getElementById('show_all').addEventListener('click', show_all);
-document.getElementById('select_site').addEventListener('change', draw_charts);
-document.getElementById('select_dose_type').addEventListener('change', draw_charts);
+document.getElementById('select_site').addEventListener('change', draw_chart);
+document.getElementById('select_dose_type').addEventListener('change', draw_chart);
