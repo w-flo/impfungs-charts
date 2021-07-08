@@ -23,6 +23,7 @@ for (state of states) {
 }
 
 var vaccination_data;
+var per_site_data = {};
 var delivery_data = [];
 
 var charts = {
@@ -83,6 +84,26 @@ function update_delivery_data(tsv_string) {
     }
 
     delivery_data.sort((delivery1, delivery2) => delivery1.date - delivery2.date);
+}
+
+function update_per_site_data(tsv_string) {
+    let lines = tsv_string.trim().split('\n');
+    for (let line of lines) {
+        let values = line.split('\t');
+
+        let date = values[0];
+        let site = values[1];
+        let dose_type = values[2];
+
+        let dose_counts = [];
+        for (let state_index in states) {
+            dose_counts.push(parseInt(values[3 + parseInt(state_index)]));
+        }
+
+        if (!(date in per_site_data)) per_site_data[date] = {};
+        if (!(site in per_site_data[date])) per_site_data[date][site] = {};
+        per_site_data[date][site][dose_type] = dose_counts;
+    }
 }
 
 function draw_charts() {
@@ -173,29 +194,31 @@ function draw_charts() {
         for (state_index in states) {
             let state = states[state_index];
 
-            let total_doses = count_doses(vaccination_data[date_str], state_index, only_vaccine);
-            let filtered_total_doses = count_doses(vaccination_data[date_str], state_index, only_vaccine, dose_type, site);
+            let total_doses = count_doses(date_str, state_index, only_vaccine);
+            let filtered_total_doses = count_doses(date_str, state_index, only_vaccine, dose_type, site);
+            let previous_week_doses = count_doses(previous_week_date_str, state_index, only_vaccine);
+            let filtered_previous_week_doses = count_doses(previous_week_date_str, state_index, only_vaccine, dose_type, site);
 
-            if (previous_week_date_str in vaccination_data && filtered_total_doses != null) {
-                let previous_week_doses = count_doses(vaccination_data[previous_week_date_str], state_index, only_vaccine);
+            if (previous_week_date_str in vaccination_data) {
                 let new_doses = total_doses - previous_week_doses;
+                sum_new_doses += new_doses;
                 let daily_new_doses = new_doses / 7;
 
-                let filtered_previous_week_doses = count_doses(vaccination_data[previous_week_date_str], state_index, only_vaccine, dose_type, site);
-                let filtered_new_doses = filtered_total_doses - filtered_previous_week_doses;
-                let filtered_daily_new_doses = filtered_new_doses / 7;
-                let filtered_daily_new_doses_rate = (filtered_daily_new_doses * 100) / state.inhabitants;
+                if (filtered_total_doses != null && filtered_previous_week_doses != null) {
+                    let filtered_new_doses = filtered_total_doses - filtered_previous_week_doses;
+                    sum_filtered_new_doses += filtered_new_doses;
+                    let filtered_daily_new_doses = filtered_new_doses / 7;
+                    let filtered_daily_new_doses_rate = (filtered_daily_new_doses * 100) / state.inhabitants;
+                    charts["doses_per_day"].datasets[state_index].data.push(filtered_daily_new_doses_rate);
+                } else {
+                    charts["doses_per_day"].datasets[state_index].data.push(NaN);
+                }
 
                 let doses_available = delivered_doses[state_index] - total_doses;
+                sum_doses_available += doses_available;
                 let doses_good_for = doses_available / daily_new_doses;
 
                 let doses_unused_rate = (doses_available * 100) / state.inhabitants;
-
-                sum_new_doses += new_doses;
-                sum_filtered_new_doses += filtered_new_doses;
-                sum_doses_available += doses_available;
-
-                charts["doses_per_day"].datasets[state_index].data.push(filtered_daily_new_doses_rate);
 
                 if (delivery_data_end > date) {
                     charts["good_for"].datasets[state_index].data.push(doses_good_for);
@@ -207,30 +230,31 @@ function draw_charts() {
         if (previous_week_date_str in vaccination_data) {
             // Special "federal" deliveries and vaccinations that are not registered with a state
             sum_doses_available += delivered_doses[16];
-            let federal_total_doses = count_doses(vaccination_data[date_str], 16, only_vaccine);
-            let previous_week_federal_doses = count_doses(vaccination_data[previous_week_date_str], 16, only_vaccine);
+            let federal_total_doses = count_doses(date_str, 16, only_vaccine);
+            let previous_week_federal_doses = count_doses(previous_week_date_str, 16, only_vaccine);
             let federal_new_doses = federal_total_doses - previous_week_federal_doses;
             sum_doses_available -= federal_total_doses;
 
-            let filtered_federal_total_doses = count_doses(vaccination_data[date_str], 16, only_vaccine, dose_type, site);
-            if (filtered_federal_total_doses != null) {
-                let filtered_previous_week_federal_doses = count_doses(vaccination_data[previous_week_date_str], 16, only_vaccine, dose_type, site);
-                let filtered_federal_new_doses = filtered_federal_total_doses - filtered_previous_week_federal_doses;
+            let filtered_federal_total_doses = count_doses(date_str, 16, only_vaccine, dose_type, site);
+            let filtered_previous_week_federal_doses = count_doses(previous_week_date_str, 16, only_vaccine, dose_type, site);
 
-                // Calculations for all of Germany
+            // Calculations for all of Germany
+            if (filtered_federal_total_doses != null && filtered_previous_week_federal_doses != null) {
+                let filtered_federal_new_doses = filtered_federal_total_doses - filtered_previous_week_federal_doses;
                 let filtered_daily_new_doses = (sum_filtered_new_doses + filtered_federal_new_doses) / 7;
                 let filtered_daily_new_doses_rate = (filtered_daily_new_doses * 100) / sum_inhabitants;
-
-                let daily_new_doses = (sum_new_doses + federal_new_doses) / 7;
-                let doses_good_for = sum_doses_available / daily_new_doses;
-                let doses_unused_rate = (sum_doses_available * 100) / sum_inhabitants;
-
                 charts["doses_per_day"].datasets[16].data.push(filtered_daily_new_doses_rate);
+            } else {
+                charts["doses_per_day"].datasets[16].data.push(NaN);
+            }
 
-                if (delivery_data_end > date) {
-                    charts["good_for"].datasets[16].data.push(doses_good_for);
-                    charts["unused"].datasets[16].data.push(doses_unused_rate);
-                }
+            let daily_new_doses = (sum_new_doses + federal_new_doses) / 7;
+            let doses_good_for = sum_doses_available / daily_new_doses;
+            let doses_unused_rate = (sum_doses_available * 100) / sum_inhabitants;
+
+            if (delivery_data_end > date) {
+                charts["good_for"].datasets[16].data.push(doses_good_for);
+                charts["unused"].datasets[16].data.push(doses_unused_rate);
             }
         }
     }
@@ -279,7 +303,12 @@ function draw_charts() {
     }
 }
 
-function count_doses(vaccination_day_data, state_index, only_vaccine = "", dose_type = "", site = "") {
+function count_doses(date_str, state_index, only_vaccine = "", dose_type = "", site = "") {
+    if (!(date_str in vaccination_data)) {
+        return null;
+    }
+
+    let vaccination_day_data = vaccination_data[date_str];
     let type = vaccination_day_data['type'];
     let result = 0;
     for (vaccine in vaccination_day_data['data']) {
@@ -319,23 +348,28 @@ function count_doses(vaccination_day_data, state_index, only_vaccine = "", dose_
                 if (site == "doctors_office" || site == "") {
                     result += vaccine_doses[state_index * 2 + 1];
                 }
-            } else if (type == "combined" && vaccine_doses.length == (16 + 1) * 2) { // two-dose vaccine
-                if (site == "") {
-                    if (dose_type == "first_dose" || dose_type == "") {
-                        result += vaccine_doses[state_index * 2 + 0];
-                    }
-                    if (dose_type == "second_dose" || dose_type == "") {
-                        result += vaccine_doses[state_index * 2 + 1];
-                    }
-                } else {
-                    return null;
+            } else if (type == "combined" && site == "" && vaccine_doses.length == (16 + 1) * 2) { // two-dose vaccine
+                if (dose_type == "first_dose" || dose_type == "") {
+                    result += vaccine_doses[state_index * 2 + 0];
                 }
-            } else if (type == "combined" && vaccine_doses.length == (16 + 1)) { // single dose vaccine
-                if (site == "") {
-                    result += vaccine_doses[state_index];
-                } else {
-                    return null;
+                if (dose_type == "second_dose" || dose_type == "") {
+                    result += vaccine_doses[state_index * 2 + 1];
                 }
+            } else if (type == "combined" && site == "" && vaccine_doses.length == (16 + 1)) { // single dose vaccine
+                result += vaccine_doses[state_index];
+            } else if (type == "combined" && site != "" && only_vaccine == "" && date_str in per_site_data) {
+                if (state_index == 16) {
+                    break;
+                }
+                if (dose_type == "first_dose" || dose_type == "") {
+                    result += per_site_data[date_str][site]['first_dose'][state_index];
+                }
+                if (dose_type == "second_dose" || dose_type == "") {
+                    result += per_site_data[date_str][site]['second_dose'][state_index];
+                }
+                break;
+            } else if (type == "combined" && site != "" && (only_vaccine != "" || !(date_str in per_site_data))) {
+                return null;
             } else {
                 console.log("Invalid count request!");
                 return null;
@@ -385,7 +419,11 @@ let fetch_expected_deliveries = fetch('./expected_deliveries.tsv')
     .then(response => response.text())
     .then(update_delivery_data);
 
-Promise.all([fetch_delivery_data, fetch_vaccination_data, fetch_expected_deliveries])
+let fetch_per_site_data = fetch('./vaccinations_per_site.tsv')
+    .then(response => response.text())
+    .then(update_per_site_data);
+
+Promise.all([fetch_delivery_data, fetch_vaccination_data, fetch_expected_deliveries, fetch_per_site_data])
     .then(draw_charts);
 
 document.getElementById('select_vaccine').addEventListener('change', draw_charts);

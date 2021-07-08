@@ -30,12 +30,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
     </p>
 
     <p>
-        Quellen: Impfzahlen aus den <a href="https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Daten/Impfquotenmonitoring.html">täglichen Veröffentlichungen des RKI</a>, Liefermengen aus den <a href="https://impfdashboard.de/daten">Daten des Impfdashboards</a> von RKI und BMG.
+        Quellen: Impfzahlen aus den <a href="https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Daten/Impfquotenmonitoring.html">täglichen Veröffentlichungen des RKI</a>, Darstellung nach Impfstelle ab 9. Juni aus den Mittwoch-<a href="https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Situationsberichte/Gesamt.html">Situationsberichten</a>, Liefermengen aus den <a href="https://impfdashboard.de/daten">Daten des Impfdashboards</a> von RKI und BMG.
         Die Liefermengen werden wochenweise erst nachträglich veröffentlicht, weshalb die entsprechenden Diagramme frühzeitig enden.
     </p>
 
     <p>
-        Allgemeinere Statistiken zum Impffortschritt gibt es z.B. bei der <a href="https://www.zeit.de/wissen/gesundheit/corona-impfungen-deutschland-impfquote-impffortschritt-aktuelle-karte">ZEIT</a>.
+        Seit Einstieg der Betriebsärzte in die Impfkampagne Anfang Juni liegen keine täglichen Daten zur Impfstelle mehr vor.
+        Die wöchentlichen Angaben des RKI werden hier bei Filterung nach der Impfstelle berücksichtigt, jedoch ist mit diesen Daten keine gleichzeitge Filterung nach Impfstoff mehr möglich.
+        Die Qualität ist laut RKI-Angaben bei diesen Daten schlecht, da nicht jede durch einen Betriebsarzt erfolgte Impfung für das RKI als solche zu erkennen ist. Es gehen also teilweise auch von Betriebsärzten durchgeführte Impfungen in die Zahl der Arztpraxis- oder Impfzentrumsimpfungen ein.
     </p>
 
     <select id="select_vaccine" size="1">
@@ -53,6 +55,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
         <option value="">Impfzentren, mobile Teams, Kliniken und niedergelassene Ärzte</option>
         <option value="vaccination_centre">nur Impfzentren, mobile Teams und Kliniken</option>
         <option value="doctors_office">nur niedergelassene Ärzte</option>
+        <option value="company">nur Betriebsärzte</option>
     </select>
     <select id="select_dose_type" size="1">
         <option value="">Erstimpfungen, Zweitimpfungen und Impfungen mit Janssen / Johnson & Johnson</option>
