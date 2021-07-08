@@ -16,7 +16,6 @@ var states = [
     {name: "Schleswig-Holstein", inhabitants: 2903773, color: "#4770b3", hidden: true},
     {name: "Thüringen", inhabitants: 2133378, color: "#ff0000", hidden: true},
 ];
-var germany_hidden = false;
 var sum_inhabitants = 0;
 for (state of states) {
     sum_inhabitants += state.inhabitants;
@@ -162,7 +161,6 @@ function draw_chart() {
         backgroundColor: "#000000",
         borderColor: "#000000",
         lineTension: 0,
-        hidden: germany_hidden,
         fill: false,
         data: [],
     });
@@ -305,9 +303,6 @@ function draw_chart() {
                 },
             }]
         },
-        legend: {
-            onClick: on_legend_click,
-        }
     };
 
     if (charts[chart_type].y_axis_ticks) {
@@ -406,24 +401,9 @@ function count_doses(date_str, state_index, only_vaccine = "", dose_type = "", s
     return result;
 }
 
-function on_legend_click(e, legend_item) {
-    let index = legend_item.datasetIndex;
-    if (index < 16) {
-        states[index].hidden = !states[index].hidden;
-    } else {
-        germany_hidden = !germany_hidden;
-    }
-
-    chart.getDatasetMeta(index).hidden = (index < 16) ?states[index].hidden :germany_hidden;
-    chart.update();
-}
-
 function show_all() {
-    germany_hidden = false;
     for (let index = 0; index <= 16; index++) {
-        if (index < 16) states[index].hidden = false;
-
-        chart.getDatasetMeta(index).hidden = (index < 16) ?states[index].hidden :germany_hidden;
+        chart.getDatasetMeta(index).hidden = false;
         chart.update();
     }
 }
