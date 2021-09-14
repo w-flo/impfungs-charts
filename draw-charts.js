@@ -368,22 +368,30 @@ function count_doses(date_str, state_index, only_vaccine = "", dose_type = "", s
                         result += vaccine_doses[state_index * 4 + 3];
                     }
                 }
-            } else if (type == "gp" && vaccine_doses.length == (16 + 1) * 2) { // single dose vaccine
+            } else if (type == "gp" && vaccine_doses.length == (16 + 1) * 2 && dose_type != "booster_dose") { // single dose vaccine
                 if (site == "vaccination_centre" || site == "") {
                     result += vaccine_doses[state_index * 2 + 0];
                 }
                 if (site == "doctors_office" || site == "") {
                     result += vaccine_doses[state_index * 2 + 1];
                 }
-            } else if (type == "combined" && site == "" && vaccine_doses.length == (16 + 1) * 2) { // two-dose vaccine
+            } else if (type == "combined" && site == "" && vaccine_doses.length == (16 + 1) * 3) { // two-dose vaccine
                 if (dose_type == "first_dose" || dose_type == "") {
-                    result += vaccine_doses[state_index * 2 + 0];
+                    result += vaccine_doses[state_index * 3 + 0];
                 }
                 if (dose_type == "second_dose" || dose_type == "") {
+                    result += vaccine_doses[state_index * 3 + 1];
+                }
+                if (dose_type == "booster_dose" || dose_type == "") {
+                    result += vaccine_doses[state_index * 3 + 2];
+                }
+            } else if (type == "combined" && site == "" && vaccine_doses.length == (16 + 1) * 2) { // single dose vaccine
+                if (dose_type == "first_dose" || dose_type == "second_dose" || dose_type == "") {
+                    result += vaccine_doses[state_index * 2 + 0];
+                }
+                if (dose_type == "booster_dose" || dose_type == "") {
                     result += vaccine_doses[state_index * 2 + 1];
                 }
-            } else if (type == "combined" && site == "" && vaccine_doses.length == (16 + 1)) { // single dose vaccine
-                result += vaccine_doses[state_index];
             } else if (type == "combined" && site != "" && only_vaccine == "" && date_str in per_site_data) {
                 if (state_index == 16) {
                     break;
